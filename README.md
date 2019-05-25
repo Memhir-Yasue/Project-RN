@@ -1,2 +1,2 @@
 # Project-RN
-reddit Networks (IN PROGRESS!) - A network of user nodes visualizing 'traits' of reddit user
+reddit Networks (IN PROGRESS!) - A friend recommendation system for reddit
