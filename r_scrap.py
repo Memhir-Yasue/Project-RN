@@ -1,4 +1,5 @@
 import praw
+import json
 import config
 
 
@@ -7,14 +8,13 @@ reddit = praw.Reddit(client_id = config.client_id,
                      user_agent = config.user_agent)
 
 
+# obj_methods = [name for name in dir(obj)]
+# print(help(obj.method))
 
-class Sub_Scrapper():
+class Sub_scrapper():
     """
     This class is to be used only for gathering subreddit corpuses for the purpose of training an ML model.
     """
-
-
-
 
 
 class Redditor:
@@ -24,6 +24,8 @@ class Redditor:
     def __init__(self,user):
         self.user = user
         self.__good_to_go = self.validate_user()
+        self.visited_pages = {}
+        self.pages_info = {}
 
     def validate_user(self):
         try:
@@ -33,35 +35,40 @@ class Redditor:
             print("User not found")
             self.__good_to_go = False
 
-    def subreddit_visited(self):
+    def process_subreddit_visited(self):
         """
         subreddits where user has left a comment
         """
         if (self.__good_to_go == False):
             raise Exception('User was not validated!')
 
-        visited_pages = {}
         user = reddit.redditor(name=self.user)
         for comment in user.comments.top('all'):
             # body = comment.body
             sub = comment.subreddit
-            if sub.display_name not in visited_pages:
-                visited_pages[sub.display_name] = 1
+            if sub.display_name not in self.visited_pages:
+                self.visited_pages[sub.display_name] = 1
+                self.pages_info[sub.display_name] = sub.public_description
             else:
-                visited_pages[sub.display_name] += 1
-        return visited_pages
+                self.visited_pages[sub.display_name] += 1
+        return self.visited_pages, self.pages_info
+
+    def print_page_info(self):
+        info = self.pages_info
+        for k, v in info.items():
+            print("Subreddit: {0}\n Description: {1}\n\n".format(k,v))
+
+    # def print_pages_count(self):
+    #     count_dict = self.visited_pages
+    #     for k, v in count_dict.items():
+    #         print("Subreddit: {0}\n Description: {1}\n\n".format(k,v))
 
 
+redditor = Redditor(user='dovahsevobrom')
+visited, info = redditor.process_subreddit_visited()
+redditor.print_pages_info()
+redditor.print_pages_count()
 
-
-
-
-redditor = Redditor(user='memhir-yasue')
-print(redditor.subreddit_visited())
-
-# user = reddit.redditor(name='memhir-yasue')
-# user_comments = [comment for comment in user.comments.top('all')]
-# print([comment.subreddit for comment in user_comments])
 
 # print(user)
 # for comment in user.comments.top('all'):
@@ -70,7 +77,3 @@ print(redditor.subreddit_visited())
 
 
 # reddit.redditor(name='hfdjshfdsjuf').comments.top('all')
-
-
-# obj_methods = [name for name in dir(obj)]
-# print(help(obj.method))
