@@ -58,6 +58,18 @@ class Redditor:
         for k, v in info.items():
             print("Subreddit: {0}\n Description: {1}\n\n".format(k,v))
 
+    def top_subreddits(self):
+        freq = {}
+        for submission in reddit.subreddit('all').top(limit=5000):
+            sub_raw = submission.subreddit
+            sub = sub_raw.display_name
+            if sub not in freq:
+                freq[sub] = 1
+            else:
+                freq[sub] += 1
+        return freq
+
+
     # def print_pages_count(self):
     #     count_dict = self.visited_pages
     #     for k, v in count_dict.items():
@@ -66,8 +78,9 @@ class Redditor:
 
 redditor = Redditor(user='dovahsevobrom')
 visited, info = redditor.process_subreddit_visited()
-redditor.print_pages_info()
-redditor.print_pages_count()
+subreddit_freq = redditor.top_subreddits()
+sorted_freq = sorted(subreddit_freq.items(), key=lambda x: x[1], reverse=True)
+print(sorted_freq)
 
 
 # print(user)
