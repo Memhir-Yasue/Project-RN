@@ -1,7 +1,6 @@
 import praw
 import json
 import config
-import LDAVisual
 
 
 reddit = praw.Reddit(client_id = config.client_id,
@@ -48,6 +47,7 @@ class Redditor:
             # body = comment.body
             sub = comment.subreddit
             if sub.display_name not in self.visited_pages:
+                print(sub)
                 self.visited_pages[sub.display_name] = 1
                 self.pages_info[sub.display_name] = sub.public_description
             else:
@@ -71,15 +71,32 @@ class Redditor:
         # For every subreddit that the validated user has participated in
         for sub in visited_pages_list:
             # for every posts in that subreddit
-            for submission in reddit.subreddit(sub).new():
+            for submission in reddit.subreddit(sub).new(limit=10):
+                submission.comments.replace_more(limit=1)
                 if submission.num_comments > 0:
                     # for every comments in that post get the authors (potentials)
                     for comment in submission.comments:
                         if comment.author not in potential_matches:
-                            print(comment.author)
+                            print(sub,comment.author)
                             potential_matches.append(comment.author)
         self.potential_matches = potential_matches
         return potential_matches
+
+    def process_potential_matches_sub(self):
+        """
+        # get a set of subbredits where the redditor has left a comment
+        """
+        potentials_matches_subreddit = []
+        for redditor in self.potential_matches:
+            user = reddit.redditor(name=str(redditor))
+            for comment in user.comments.top(limit=10):
+                # body = comment.body
+                sub = comment.subreddit
+                if sub.display_name not in potentials_matches_subreddit:
+                    print(sub.display_name)
+                    potentials_matches_subreddit.append(sub.display_name)
+        return potentials_matches_subreddit
+
 
 
     def top_subreddits(self):
@@ -103,10 +120,13 @@ class Redditor:
     #     for k, v in count_dict.items():
     #         print("Subreddit: {0}\n Description: {1}\n\n".format(k,v))
 
-
-redditor = Redditor(user='memhir-yasue')
+'coordinatedflight'
+redditor = Redditor(user='corylulu')
 visited, info = redditor.process_subreddit_visited()
 potential_matches = redditor.get_potential_matches()
+p_m_s = redditor.process_potential_matches_sub()
+print("{} potential matches and {} subreddits to hot encode".format( len(potential_matches),len(p_m_s) ) )
+
 
 # sorted_freq = sorted(subreddit_freq.items(), key=lambda x: x[1], reverse=True)
 # print(subreddit_freq)
