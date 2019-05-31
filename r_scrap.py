@@ -11,19 +11,21 @@ reddit = praw.Reddit(client_id = config.client_id,
 # obj_methods = [name for name in dir(obj)]
 # print(help(obj.method))
 
-class Sub_scrapper():
+class Sub_scrapper:
     """
+    For the distant future...
     This class is to be used only for gathering subreddit corpuses for the purpose of training an ML model.
     """
 
 class Redditor:
     """
-    This class is responsible for conducting all user related operations
+    This class is responsible for conducting all user/redditor related operations
     """
     def __init__(self,user):
         self.user = user
         self.__good_to_go = self.validate_user()
         self.visited_pages = {}
+        self.visited_pages_list = []
         self.pages_info = {}
         self.potential_matches = []
 
@@ -46,13 +48,16 @@ class Redditor:
         for comment in user.comments.top('all'):
             # body = comment.body
             sub = comment.subreddit
-            if sub.display_name not in self.visited_pages:
+            # visited_pages_list and visited_pages are both the same.
+            #Difference is one keeps track of the frquency and other one is just a list for later use
+            if sub.display_name not in self.visited_pages_list:
                 print(sub)
                 self.visited_pages[sub.display_name] = 1
                 self.pages_info[sub.display_name] = sub.public_description
+                self.visited_pages_list.append(sub)
             else:
                 self.visited_pages[sub.display_name] += 1
-        return self.visited_pages, self.pages_info
+        return self.visited_pages_list, self.visited_pages, self.pages_info
 
     def print_page_info(self):
         """
@@ -86,17 +91,29 @@ class Redditor:
         """
         # get a set of subbredits where the redditor has left a comment
         """
-        potentials_matches_subreddit = []
+        potentials_matches_subreddit_list = []
+        potential_matches_name_to_sub = {}
         for redditor in self.potential_matches:
-            user = reddit.redditor(name=str(redditor))
-            for comment in user.comments.top(limit=10):
+            # for dict mapping; for cosign similarity comparison later
+            individual_redditors_sub_list = []
+            redditor_str = str(redditor)
+            user = reddit.redditor(name=redditor_str)
+            for comment in user.comments.top(limit=50):
                 # body = comment.body
                 sub = comment.subreddit
-                if sub.display_name not in potentials_matches_subreddit:
-                    print(sub.display_name)
-                    potentials_matches_subreddit.append(sub.display_name)
-        return potentials_matches_subreddit
 
+                if sub.display_name not in potentials_matches_subreddit_list:
+                    print(sub.display_name)
+                    potentials_matches_subreddit_list.append(sub.display_name)
+
+                if sub.display_name not in individual_redditors_sub_list:
+                    individual_redditors_sub_list.append(sub.display_name)
+
+            # dict mapping of Redditor: [subreddits]
+            if redditor_str not in potential_matches_name_to_sub:
+                potential_matches_name_to_sub[redditor_str] = individual_redditors_sub_list
+
+        return potentials_matches_subreddit_list, potential_matches_name_to_sub
 
 
     def top_subreddits(self):
@@ -120,12 +137,46 @@ class Redditor:
     #     for k, v in count_dict.items():
     #         print("Subreddit: {0}\n Description: {1}\n\n".format(k,v))
 
+class Recommender:
+    """
+    This class concerns pre-processing and implementation of the recommendation 'model'
+    """
+    def __init__(self,visited_pages_list,all_subreddit_list, redditor_to_subreddit_dict):
+        self.visited_pages_list = visited_pages_list
+        self.all_subreddit_list = all_subreddit_list
+        self.redditor_to_subreddit_dict = redditor_to_subreddit_dict
+        self.validated_user_subreddit_vector = []
+        # A dict mapping redditors (potential matches) to their respective vectors
+        self.redditors_vector_dict = {}
+
+    def vectorization(self):
+        """
+        ...  .. ... ....
+        """
+        validated_user_subreddit_vector = [1 if sub in self.visited_pages_list else 0 for sub in self.all_subreddit_list]
+        redditors_to_vector = {}
+        for name,visited_subs in self.redditor_to_subreddit_dict.items():
+            subreddit_vector = [1 if sub in visited_subs else 0 for sub in self.all_subreddit_list]
+            redditors_to_vector[name] = subreddit_vector
+        self.validated_user_subreddit_vector = validated_user_subreddit_vector
+        self.redditors_vector_dict = redditors_to_vector
+        return validated_user_subreddit_vector,self.redditors_vector_dict
+
+
 'coordinatedflight'
-redditor = Redditor(user='corylulu')
-visited, info = redditor.process_subreddit_visited()
+redditor = Redditor(user='memhir-yasue')
+visited_list,visited_dict, info = redditor.process_subreddit_visited()
 potential_matches = redditor.get_potential_matches()
-p_m_s = redditor.process_potential_matches_sub()
-print("{} potential matches and {} subreddits to hot encode".format( len(potential_matches),len(p_m_s) ) )
+pms_list, pms_dict = redditor.process_potential_matches_sub()
+for k,v in pms_dict.items():
+    print(k,": ",v,"\n\n")
+print("{} potential matches and {} subreddits to hot encode".format( len(potential_matches),len(pms_list) ) )
+recommender = Recommender(visited_list,pms_list,pms_dict)
+val_user_v, r_v_dict = recommender.vectorization()
+print(val_user_v)
+for k,v in r_v_dict.items():
+    print(k,": ",v,"\n\n")
+
 
 
 # sorted_freq = sorted(subreddit_freq.items(), key=lambda x: x[1], reverse=True)
