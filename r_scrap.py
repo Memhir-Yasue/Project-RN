@@ -1,6 +1,7 @@
 import praw
 import json
 import config
+from scipy import spatial
 
 
 reddit = praw.Reddit(client_id = config.client_id,
@@ -148,20 +149,33 @@ class Recommender:
         self.validated_user_subreddit_vector = []
         # A dict mapping redditors (potential matches) to their respective vectors
         self.redditors_vector_dict = {}
+        self.redditors_cosign_similarity = {}
 
     def vectorization(self):
         """
-        ...  .. ... ....
+        Represents the prescence of all subreddits as a vector with 1 indicating a presence.
         """
         validated_user_subreddit_vector = [1 if sub in self.visited_pages_list else 0 for sub in self.all_subreddit_list]
         redditors_to_vector = {}
+
         for name,visited_subs in self.redditor_to_subreddit_dict.items():
             subreddit_vector = [1 if sub in visited_subs else 0 for sub in self.all_subreddit_list]
             redditors_to_vector[name] = subreddit_vector
+
         self.validated_user_subreddit_vector = validated_user_subreddit_vector
         self.redditors_vector_dict = redditors_to_vector
+
         return validated_user_subreddit_vector,self.redditors_vector_dict
 
+    def compute_cosign_similarity(self):
+        redditors_cosign_similarity = {}
+        for name,sub_vector in self.redditors_vector_dict.items():
+            print(name)
+            distance = spatial.distance.cosine(self.validated_user_subreddit_vector,sub_vector)
+            similarity = 1 - distance
+            redditors_cosign_similarity[name] = round(similarity,3)
+        self.redditors_cosign_similarity = redditors_cosign_similarity
+        return redditors_cosign_similarity
 
 'coordinatedflight'
 redditor = Redditor(user='memhir-yasue')
@@ -173,8 +187,9 @@ for k,v in pms_dict.items():
 print("{} potential matches and {} subreddits to hot encode".format( len(potential_matches),len(pms_list) ) )
 recommender = Recommender(visited_list,pms_list,pms_dict)
 val_user_v, r_v_dict = recommender.vectorization()
+cosign_similarity = recommender.compute_cosign_similarity()
 print(val_user_v)
-for k,v in r_v_dict.items():
+for k,v in cosign_similarity.items():
     print(k,": ",v,"\n\n")
 
 
