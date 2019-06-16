@@ -22,10 +22,10 @@ class Redditor:
     """
     This class is responsible for conducting all user/redditor related operations
     """
-    def __init__(self,user):
+    def __init__(self,user,interests):
         self.user = user
         self.__good_to_go = self.validate_user()
-        self.subs_of_interest = []
+        self.subs_of_interest = interests
         self.visited_pages = {}
         self.visited_pages_list = []
         self.pages_info = {}
@@ -39,8 +39,9 @@ class Redditor:
             print("User not found")
             return False
 
-    def interest(self,interests):
-        self.subs_of_interest = interests
+    # def interest(self,interests):
+    #     self.visited_pages_list.append(interests)
+    #     self.subs_of_interest = interests
 
     def process_subreddit_visited(self):
         """
@@ -55,6 +56,7 @@ class Redditor:
             sub = comment.subreddit
             # visited_pages_list and visited_pages are both the same.
             #Difference is one keeps track of the frquency and other one is just a list for later use
+            self.visited_pages_list.append(self.subs_of_interest)
             if sub.display_name not in self.visited_pages_list:
                 print(sub)
                 self.visited_pages[sub.display_name] = 1
@@ -62,6 +64,12 @@ class Redditor:
                 self.visited_pages_list.append(sub)
             else:
                 self.visited_pages[sub.display_name] += 1
+
+        # EXCEPTION HERE! The subs of interest will be treated as user visited sub for the purpose of getting users in that sub
+        for sub in self.subs_of_interest:
+            self.visited_pages[sub] = 0
+
+        print(self.visited_pages_list)
         return self.visited_pages_list, self.visited_pages, self.pages_info
 
     def print_page_info(self):
@@ -78,6 +86,7 @@ class Redditor:
         """
         potential_matches = []
         visited_pages_list = [k for k,v in self.visited_pages.items()]
+
         # For every subreddit that the validated user has participated in
         for sub in visited_pages_list:
             # for every posts in that subreddit
@@ -160,11 +169,11 @@ class Recommender:
         """
         Represents the presence of all subreddits as a vector with 1 indicating a presence.
         """
-        validated_user_subreddit_vector = [1 if sub in self.visited_pages_list else 0 for sub in self.all_subreddit_list]
+        validated_user_subreddit_vector = [5 if sub in self.subs_of_interest else 0.5 if sub in self.visited_pages_list else 0 for sub in self.all_subreddit_list]
         redditors_to_vector = {}
 
         for name,visited_subs in self.redditors_to_subreddit_dict.items():
-            subreddit_vector = [3 if sub in self.subs_of_interest else 1 if sub in visited_subs else 0 for sub in self.all_subreddit_list]
+            subreddit_vector = [1 if sub in self.subs_of_interest else 0.5 if sub in visited_subs else 0 for sub in self.all_subreddit_list]
             redditors_to_vector[name] = subreddit_vector
 
         self.validated_user_subreddit_vector = validated_user_subreddit_vector
@@ -186,16 +195,19 @@ class Recommender:
         return redditors_cosign_similarity
 
 'coordinatedflight'
-redditor = Redditor(user='memhir-yasue')
+
+subs_of_interest = ['gameofthrones','flightsim']
+
+redditor = Redditor(user='memhir-yasue',interests=subs_of_interest)
 visited_list,visited_dict, info = redditor.process_subreddit_visited()
-potential_matches = redditor.get_potential_matches(depth=200)
+potential_matches = redditor.get_potential_matches(depth=100)
 pms_list, pms_dict = redditor.process_potential_matches_sub()
 for k,v in pms_dict.items():
     print(k,": ",v,"\n\n")
 print("{} potential matches and {} subreddits to hot encode".format( len(potential_matches),len(pms_list) ) )
 
 
-subs_of_interest = ['flightsim']
+
 recommender = Recommender(subs_of_interest,visited_list,pms_list,pms_dict)
 val_user_v, r_v_dict = recommender.vectorization()
 cosign_similarity = recommender.compute_cosign_similarity()
