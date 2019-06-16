@@ -25,6 +25,7 @@ class Redditor:
     def __init__(self,user):
         self.user = user
         self.__good_to_go = self.validate_user()
+        self.subs_of_interest = []
         self.visited_pages = {}
         self.visited_pages_list = []
         self.pages_info = {}
@@ -37,6 +38,9 @@ class Redditor:
         except:
             print("User not found")
             return False
+
+    def interest(self,interests):
+        self.subs_of_interest = interests
 
     def process_subreddit_visited(self):
         """
@@ -68,7 +72,7 @@ class Redditor:
         for k, v in info.items():
             print("Subreddit: {0}\n Description: {1}\n\n".format(k,v))
 
-    def get_potential_matches(self,limit):
+    def get_potential_matches(self,depth):
         """
         Uses the validated user's visited subreddits to start search for other users
         """
@@ -77,7 +81,7 @@ class Redditor:
         # For every subreddit that the validated user has participated in
         for sub in visited_pages_list:
             # for every posts in that subreddit
-            for submission in reddit.subreddit(sub).new(limit=limit):
+            for submission in reddit.subreddit(sub).new(limit=depth):
                 submission.comments.replace_more(limit=1)
                 if submission.num_comments > 0:
                     # for every comments in that post get the authors (potentials)
@@ -142,7 +146,8 @@ class Recommender:
     """
     This class concerns pre-processing and implementation of the recommendation 'model'
     """
-    def __init__(self,visited_pages_list,all_subreddit_list, redditors_to_subreddit_dict):
+    def __init__(self,subs_of_interest,visited_pages_list,all_subreddit_list, redditors_to_subreddit_dict):
+        self.subs_of_interest = subs_of_interest
         self.visited_pages_list = visited_pages_list
         self.all_subreddit_list = all_subreddit_list
         self.redditors_to_subreddit_dict = redditors_to_subreddit_dict
@@ -159,7 +164,7 @@ class Recommender:
         redditors_to_vector = {}
 
         for name,visited_subs in self.redditors_to_subreddit_dict.items():
-            subreddit_vector = [1 if sub in visited_subs else 0 for sub in self.all_subreddit_list]
+            subreddit_vector = [3 if sub in self.subs_of_interest else 1 if sub in visited_subs else 0 for sub in self.all_subreddit_list]
             redditors_to_vector[name] = subreddit_vector
 
         self.validated_user_subreddit_vector = validated_user_subreddit_vector
@@ -183,12 +188,15 @@ class Recommender:
 'coordinatedflight'
 redditor = Redditor(user='memhir-yasue')
 visited_list,visited_dict, info = redditor.process_subreddit_visited()
-potential_matches = redditor.get_potential_matches(limit=20)
+potential_matches = redditor.get_potential_matches(depth=200)
 pms_list, pms_dict = redditor.process_potential_matches_sub()
 for k,v in pms_dict.items():
     print(k,": ",v,"\n\n")
 print("{} potential matches and {} subreddits to hot encode".format( len(potential_matches),len(pms_list) ) )
-recommender = Recommender(visited_list,pms_list,pms_dict)
+
+
+subs_of_interest = ['flightsim']
+recommender = Recommender(subs_of_interest,visited_list,pms_list,pms_dict)
 val_user_v, r_v_dict = recommender.vectorization()
 cosign_similarity = recommender.compute_cosign_similarity()
 print(val_user_v)
