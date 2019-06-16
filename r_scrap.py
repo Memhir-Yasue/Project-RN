@@ -68,7 +68,7 @@ class Redditor:
         for k, v in info.items():
             print("Subreddit: {0}\n Description: {1}\n\n".format(k,v))
 
-    def get_potential_matches(self):
+    def get_potential_matches(self,limit):
         """
         Uses the validated user's visited subreddits to start search for other users
         """
@@ -77,7 +77,7 @@ class Redditor:
         # For every subreddit that the validated user has participated in
         for sub in visited_pages_list:
             # for every posts in that subreddit
-            for submission in reddit.subreddit(sub).new(limit=10):
+            for submission in reddit.subreddit(sub).new(limit=limit):
                 submission.comments.replace_more(limit=1)
                 if submission.num_comments > 0:
                     # for every comments in that post get the authors (potentials)
@@ -99,7 +99,7 @@ class Redditor:
             individual_redditors_sub_list = []
             redditor_str = str(redditor)
             user = reddit.redditor(name=redditor_str)
-            for comment in user.comments.top(limit=50):
+            for comment in user.comments.top(limit=10):
                 # body = comment.body
                 sub = comment.subreddit
 
@@ -142,10 +142,10 @@ class Recommender:
     """
     This class concerns pre-processing and implementation of the recommendation 'model'
     """
-    def __init__(self,visited_pages_list,all_subreddit_list, redditor_to_subreddit_dict):
+    def __init__(self,visited_pages_list,all_subreddit_list, redditors_to_subreddit_dict):
         self.visited_pages_list = visited_pages_list
         self.all_subreddit_list = all_subreddit_list
-        self.redditor_to_subreddit_dict = redditor_to_subreddit_dict
+        self.redditors_to_subreddit_dict = redditors_to_subreddit_dict
         self.validated_user_subreddit_vector = []
         # A dict mapping redditors (potential matches) to their respective vectors
         self.redditors_vector_dict = {}
@@ -153,25 +153,28 @@ class Recommender:
 
     def vectorization(self):
         """
-        Represents the prescence of all subreddits as a vector with 1 indicating a presence.
+        Represents the presence of all subreddits as a vector with 1 indicating a presence.
         """
         validated_user_subreddit_vector = [1 if sub in self.visited_pages_list else 0 for sub in self.all_subreddit_list]
         redditors_to_vector = {}
 
-        for name,visited_subs in self.redditor_to_subreddit_dict.items():
+        for name,visited_subs in self.redditors_to_subreddit_dict.items():
             subreddit_vector = [1 if sub in visited_subs else 0 for sub in self.all_subreddit_list]
             redditors_to_vector[name] = subreddit_vector
 
         self.validated_user_subreddit_vector = validated_user_subreddit_vector
         self.redditors_vector_dict = redditors_to_vector
 
-        return validated_user_subreddit_vector,self.redditors_vector_dict
+        return self.validated_user_subreddit_vector,self.redditors_vector_dict
 
     def compute_cosign_similarity(self):
+        """
+        Compute the cosign similarity
+        """
         redditors_cosign_similarity = {}
-        for name,sub_vector in self.redditors_vector_dict.items():
+        for name,sub_presence_vector in self.redditors_vector_dict.items():
             print(name)
-            distance = spatial.distance.cosine(self.validated_user_subreddit_vector,sub_vector)
+            distance = spatial.distance.cosine(self.validated_user_subreddit_vector,sub_presence_vector)
             similarity = 1 - distance
             redditors_cosign_similarity[name] = round(similarity,3)
         self.redditors_cosign_similarity = redditors_cosign_similarity
@@ -180,7 +183,7 @@ class Recommender:
 'coordinatedflight'
 redditor = Redditor(user='memhir-yasue')
 visited_list,visited_dict, info = redditor.process_subreddit_visited()
-potential_matches = redditor.get_potential_matches()
+potential_matches = redditor.get_potential_matches(limit=20)
 pms_list, pms_dict = redditor.process_potential_matches_sub()
 for k,v in pms_dict.items():
     print(k,": ",v,"\n\n")
@@ -189,8 +192,8 @@ recommender = Recommender(visited_list,pms_list,pms_dict)
 val_user_v, r_v_dict = recommender.vectorization()
 cosign_similarity = recommender.compute_cosign_similarity()
 print(val_user_v)
-for k,v in cosign_similarity.items():
-    print(k,": ",v,"\n\n")
+cosign_similarity = sorted(cosign_similarity.items(), key=lambda x: x[1], reverse=True)
+print(cosign_similarity)
 
 
 
