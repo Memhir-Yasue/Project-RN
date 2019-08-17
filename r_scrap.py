@@ -2,6 +2,7 @@ import praw
 import json
 import config
 from scipy import spatial
+import lit_db
 
 
 reddit = praw.Reddit(client_id = config.client_id,
@@ -12,6 +13,9 @@ reddit = praw.Reddit(client_id = config.client_id,
 # obj_methods = [name for name in dir(obj)]
 # print(help(obj.method))
 
+
+
+
 class Sub_scrapper:
     """
     For the distant future...
@@ -21,6 +25,9 @@ class Sub_scrapper:
 class Redditor:
     """
     This class is responsible for conducting all user/redditor related operations
+
+    visited_pages_list and visited_pages are both the same.
+    Difference is one keeps track of the frequency and other one is just a list for later use in the recommendation system.
     """
     def __init__(self,user,interests):
         self.user = user
@@ -54,8 +61,8 @@ class Redditor:
         for comment in user.comments.top('all'):
             # body = comment.body
             sub = comment.subreddit
-            # visited_pages_list and visited_pages are both the same.
-            #Difference is one keeps track of the frquency and other one is just a list for later use
+            # Visited_pages_list and visited_pages are both the same.
+            # Difference is one keeps track of the frquency and other one is just a list for later use
             self.visited_pages_list.append(self.subs_of_interest)
             if sub.display_name not in self.visited_pages_list:
                 print(sub)
@@ -151,6 +158,45 @@ class Redditor:
     #     for k, v in count_dict.items():
     #         print("Subreddit: {0}\n Description: {1}\n\n".format(k,v))
 
+
+
+class auto_scrap(Redditor):
+    """
+    This class is intended for gathering used related info automatically and storing it into a DB
+    """
+
+
+    def get_potential_matches(self,depth):
+        """
+        Uses the validated user's visited subreddits to start extracting for other users
+        """
+        lit_db.startdb()
+        lit_db.create_tables()
+        id = 0
+        potential_matches = []
+        visited_pages_list = [k for k,v in self.visited_pages.items()]
+
+        # For every subreddit that the validated user has participated in
+        for sub in visited_pages_list:
+            print(sub)
+            # for every posts in that subreddit
+            for submission in reddit.subreddit(sub).new(limit=depth):
+                submission.comments.replace_more(limit=1)
+                if submission.num_comments > 0:
+                    # for every comments in that post get the authors (potentials)
+                    for comment in submission.comments:
+                        if comment.author not in potential_matches:
+                            person_name = comment.author
+                            lit_db.append_to_userID(id, str(person_name))
+                            print(sub,person_name)
+                            potential_matches.append(person_name)
+                            id+=1
+        self.potential_matches = potential_matches
+        lit_db.closedb()
+        return potential_matches
+
+
+
 class Recommender:
     """
     This class concerns pre-processing and implementation of the recommendation 'model'
@@ -198,22 +244,33 @@ class Recommender:
 
 subs_of_interest = ['gameofthrones','flightsim']
 
-redditor = Redditor(user='memhir-yasue',interests=subs_of_interest)
-visited_list,visited_dict, info = redditor.process_subreddit_visited()
-potential_matches = redditor.get_potential_matches(depth=100)
-pms_list, pms_dict = redditor.process_potential_matches_sub()
-for k,v in pms_dict.items():
-    print(k,": ",v,"\n\n")
-print("{} potential matches and {} subreddits to hot encode".format( len(potential_matches),len(pms_list) ) )
+redditor = auto_scrap(user='memhir-yasue',interests=subs_of_interest)
+redditor.process_subreddit_visited()
+redditor.get_potential_matches(depth=5)
 
 
 
-recommender = Recommender(subs_of_interest,visited_list,pms_list,pms_dict)
-val_user_v, r_v_dict = recommender.vectorization()
-cosign_similarity = recommender.compute_cosign_similarity()
-print(val_user_v)
-cosign_similarity = sorted(cosign_similarity.items(), key=lambda x: x[1], reverse=True)
-print(cosign_similarity)
+
+
+
+# subs_of_interest = ['gameofthrones','flightsim']
+#
+# redditor = Redditor(user='memhir-yasue',interests=subs_of_interest)
+# visited_list,visited_dict, info = redditor.process_subreddit_visited()
+# potential_matches = redditor.get_potential_matches(depth=100)
+# pms_list, pms_dict = redditor.process_potential_matches_sub()
+# for k,v in pms_dict.items():
+#     print(k,": ",v,"\n\n")
+# print("{} potential matches and {} subreddits to hot encode".format( len(potential_matches),len(pms_list) ) )
+#
+#
+#
+# recommender = Recommender(subs_of_interest,visited_list,pms_list,pms_dict)
+# val_user_v, r_v_dict = recommender.vectorization()
+# cosign_similarity = recommender.compute_cosign_similarity()
+# print(val_user_v)
+# cosign_similarity = sorted(cosign_similarity.items(), key=lambda x: x[1], reverse=True)
+# print(cosign_similarity)
 
 
 
