@@ -14,14 +14,6 @@ reddit = praw.Reddit(client_id = config.client_id,
 # print(help(obj.method))
 
 
-
-
-class Sub_scrapper:
-    """
-    For the distant future...
-    This class is to be used only for gathering subreddit corpuses for the purpose of training an ML model.
-    """
-
 class Redditor:
     """
     This class is responsible for conducting all user/redditor related operations
@@ -29,7 +21,7 @@ class Redditor:
     visited_pages_list and visited_pages are both the same.
     Difference is one keeps track of the frequency and other one is just a list for later use in the recommendation system.
     """
-    def __init__(self,user,interests):
+    def __init__(self, user, interests):
         self.user = user
         self.__good_to_go = self.validate_user()
         self.subs_of_interest = interests
