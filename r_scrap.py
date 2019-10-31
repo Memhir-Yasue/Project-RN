@@ -1,5 +1,4 @@
 import praw
-import json
 import config
 from scipy import spatial
 import lit_db
