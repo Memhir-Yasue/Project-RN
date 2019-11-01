@@ -1,14 +1,14 @@
 from user_hub.user import User
-from user_hub.neighborhood import Neighborhood
 
 
 def main():
     # coordinatedflight
-    redditor = User('memhir-yasue')
+    redditor = User("coordinatedflight")
     redditor.validate_user()
     redditor.get_visited_pages()
     redditor.print_subbreddit_visited()
-    redditor.print_interacted_with()
+    redditor.print_interacted_under()
+
 
 if __name__ == "__main__":
     main()

@@ -8,7 +8,8 @@ reddit = praw.Reddit(
     user_agent=config.user_agent,
 )
 
-class User():
+
+class User:
     def __init__(self, user_name):
         self.user_name = user_name
         self.__good_to_go = self.validate_user()
@@ -38,16 +39,14 @@ class User():
                 self.visited_pages[subreddit.display_name] = 1
             else:
                 self.visited_pages[subreddit.display_name] += 1
-
-            if submission.author.name not in self.interacted_under:
-                self.interacted_under[submission.author.name] = 1
-            else:
-                self.interacted_under[submission.author.name] += 1
+            if submission.author is not None:
+                if submission.author.name not in self.interacted_under.keys():
+                    self.interacted_under[submission.author.name] = 1
+                else:
+                    self.interacted_under[submission.author.name] += 1
 
     def print_subbreddit_visited(self):
         print(self.visited_pages)
 
     def print_interacted_under(self):
         print(self.interacted_under)
-
-
