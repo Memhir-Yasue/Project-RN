@@ -1,18 +1,19 @@
 import praw
 import config
 
+
 reddit = praw.Reddit(
     client_id=config.client_id,
     client_secret=config.client_secret,
     user_agent=config.user_agent,
 )
 
-
-class User:
+class User():
     def __init__(self, user_name):
         self.user_name = user_name
         self.__good_to_go = self.validate_user()
         self.visited_pages = {}
+        self.interacted_under = {}
 
     def validate_user(self):
         try:
@@ -30,11 +31,23 @@ class User:
         user = reddit.redditor(name=self.user_name)
         for comment in user.comments.top("all"):
             # body = comment.body
-            sub = comment.subreddit
-            if sub.display_name not in self.visited_pages.keys():
-                print(sub)
-                self.visited_pages[sub.display_name] = 1
+            subreddit = comment.subreddit
+            submission = comment.submission
+            if subreddit.display_name not in self.visited_pages.keys():
+                print(subreddit)
+                self.visited_pages[subreddit.display_name] = 1
             else:
-                self.visited_pages[sub.display_name] += 1
+                self.visited_pages[subreddit.display_name] += 1
 
-        return self.visited_pages
+            if submission.author.name not in self.interacted_under:
+                self.interacted_under[submission.author.name] = 1
+            else:
+                self.interacted_under[submission.author.name] += 1
+
+    def print_subbreddit_visited(self):
+        print(self.visited_pages)
+
+    def print_interacted_under(self):
+        print(self.interacted_under)
+
+
