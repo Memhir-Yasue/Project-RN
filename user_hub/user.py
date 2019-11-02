@@ -62,7 +62,9 @@ class User:
                 self.time_stamp_comment[hour].append(minute)
 
     def print_subbreddit_visited(self):
-        print(self.visited_pages)
+        ranked_subs = dict(sorted(self.visited_pages.items(), key=lambda y: y[1], reverse=True))
+        print(ranked_subs)
+
 
     def print_interacted_under(self):
         print(self.interacted_under)
