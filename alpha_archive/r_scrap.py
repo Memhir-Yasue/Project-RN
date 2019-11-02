@@ -1,9 +1,7 @@
 import praw
-import json
 import config
 from scipy import spatial
-import lit_db
-
+from alpha_archive import lit_db
 
 reddit = praw.Reddit(client_id = config.client_id,
                      client_secret=config.client_secret,
