@@ -16,7 +16,8 @@ class User:
         self.__good_to_go = self.validate_user()
         self.visited_pages = {}
         self.interacted_under = {}
-        self.time_stamp_comment = {}
+        self.time_stamp = {}
+        self.time_stamp_to_subreddit = {}
 
     def validate_user(self):
         try:
@@ -55,11 +56,13 @@ class User:
             #     else:
             #         self.interacted_under[submission.author.name] += 1
 
-            if hour not in self.time_stamp_comment.keys():
-                self.time_stamp_comment[hour] = []
-                self.time_stamp_comment[hour].append(minute)
+            if hour not in self.time_stamp.keys() and hour not in self.time_stamp_to_subreddit:
+                self.time_stamp[hour], self.time_stamp_to_subreddit = [], []
+                self.time_stamp[hour].append(minute)
+                self.time_stamp_to_subreddit[hour].append(subreddit.display_name)
             else:
-                self.time_stamp_comment[hour].append(minute)
+                self.time_stamp[hour].append(minute)
+                self.time_stamp_to_subreddit[hour].append(subreddit.display_name)
 
     def print_subbreddit_visited(self):
         ranked_subs = dict(sorted(self.visited_pages.items(), key=lambda y: y[1], reverse=True))
@@ -70,4 +73,4 @@ class User:
         print(self.interacted_under)
 
     def print_time_stamp(self):
-        print(self.time_stamp_comment)
+        print(self.time_stamp)
