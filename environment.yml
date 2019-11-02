@@ -1,0 +1,9 @@
+name: Project-RN
+channels:
+  - defaults
+dependencies:
+  - pip=19.3.1
+  - python=3.7.5
+  - pip:
+    - praw==6.4.0
+prefix: /Users/eyasuwoldu/.conda/envs/Project-RN
