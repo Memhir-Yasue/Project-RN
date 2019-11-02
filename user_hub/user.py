@@ -15,7 +15,7 @@ class User:
         self.user_name = user_name
         self.__good_to_go = self.validate_user()
         self.visited_pages = {}
-        self.interacted_under = {}
+        # self.interacted_under = {}
         self.time_stamp = {}
         self.time_stamp_to_subreddit = {}
 
@@ -56,12 +56,17 @@ class User:
             #     else:
             #         self.interacted_under[submission.author.name] += 1
 
-            if hour not in self.time_stamp.keys() and hour not in self.time_stamp_to_subreddit:
-                self.time_stamp[hour], self.time_stamp_to_subreddit = [], []
+            if hour not in self.time_stamp.keys():
+                self.time_stamp[hour] = []
                 self.time_stamp[hour].append(minute)
-                self.time_stamp_to_subreddit[hour].append(subreddit.display_name)
+
             else:
                 self.time_stamp[hour].append(minute)
+
+            if hour not in self.time_stamp_to_subreddit.keys():
+                self.time_stamp_to_subreddit[hour] = []
+                self.time_stamp_to_subreddit[hour].append(subreddit.display_name)
+            else:
                 self.time_stamp_to_subreddit[hour].append(subreddit.display_name)
 
     def print_subbreddit_visited(self):
@@ -74,3 +79,6 @@ class User:
 
     def print_time_stamp(self):
         print(self.time_stamp)
+
+    def return_user_attributes(self):
+        return self.visited_pages, self.time_stamp, self.time_stamp_to_subreddit
