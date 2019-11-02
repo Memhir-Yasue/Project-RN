@@ -7,3 +7,4 @@ dependencies:
   - pip:
     - praw==6.4.0
 prefix: /Users/eyasuwoldu/.conda/envs/Project-RN
+
