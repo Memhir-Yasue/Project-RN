@@ -1,15 +1,16 @@
 from user_hub.user import User
-from user_hub.time_box import summarize_hours_stats
+from user_hub import time_box
 
 def main():
     # coordinatedflight
     redditor = User("memhir-yasue")
     redditor.validate_user()
-
     redditor.get_visited_pages()
-    redditor.print_subbreddit_visited()
-    summarize_hours_stats(redditor.time_stamp_comment)
+    visited, t_stamp, t_stamp_subreddit = redditor.return_user_attributes()
+    time_box.summarize_hours_stats(t_stamp)
 
+    edges = time_box.process_to_edges(t_stamp_subreddit)
+    print(edges)
 
 
 if __name__ == "__main__":
